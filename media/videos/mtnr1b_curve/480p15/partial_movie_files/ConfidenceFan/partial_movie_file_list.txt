@@ -1,0 +1,6 @@
+# This file is used internally by FFMPEG.
+file 'file:/Users/urpa/Documents/SleepLab/github_repos/eu-life-talk/media/videos/mtnr1b_curve/480p15/partial_movie_files/ConfidenceFan/1185818338_3634688135_223132457.mp4'
+file 'file:/Users/urpa/Documents/SleepLab/github_repos/eu-life-talk/media/videos/mtnr1b_curve/480p15/partial_movie_files/ConfidenceFan/624642324_2504290756_1532053741.mp4'
+file 'file:/Users/urpa/Documents/SleepLab/github_repos/eu-life-talk/media/videos/mtnr1b_curve/480p15/partial_movie_files/ConfidenceFan/624642324_4071516364_234959797.mp4'
+file 'file:/Users/urpa/Documents/SleepLab/github_repos/eu-life-talk/media/videos/mtnr1b_curve/480p15/partial_movie_files/ConfidenceFan/624642324_2682654846_4020434799.mp4'
+file 'file:/Users/urpa/Documents/SleepLab/github_repos/eu-life-talk/media/videos/mtnr1b_curve/480p15/partial_movie_files/ConfidenceFan/624642324_4247107814_1818409221.mp4'
