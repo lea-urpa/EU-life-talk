@@ -9,6 +9,9 @@ import numpy as np
 
 class ConfidenceFan(Scene):
     def construct(self):
+        # Make sure background is white
+        self.camera.background_color = WHITE
+
         # ─── Replace these with your real data ─────────────────────────────
         data_x = np.array(
             [13.00, 9.00, 9.25, 9.50, 9.75, 10.00, 10.25, 10.50, 10.75, 11.00, 11.25,
@@ -38,65 +41,145 @@ class ConfidenceFan(Scene):
         data_ci_lower = data_y - standard_errs
         data_ci_upper = data_y + standard_errs
         initial_index = 0                                  # which point to show first
+
+        # Data minus initial point
+        rem_x = data_x[initial_index + 1:]
+        rem_y = data_y[initial_index + 1:]
+        rem_lo = data_ci_lower[initial_index + 1:]
+        rem_hi = data_ci_upper[initial_index + 1:]
+
         # ────────────────────────────────────────────────────────────────────
 
         # 1) Axes
-        x_min, x_max = float(data_x.min()), float(data_x.max())
-        y_min = float(data_ci_lower.min()) - 0.01  # a little padding
-        y_max = float(data_ci_upper.max()) + 0.01
-
-        print(x_min)
-        print(x_max)
+        x_min, x_max = float(data_x.min()) - 0.25, float(data_x.max() + 0.25)
+        y_min = float(data_ci_lower.min()) - 0.001  # a little padding
+        y_max = float(data_ci_upper.max()) + 0.001
 
         axes = Axes(
             x_range=[x_min, x_max, (x_max - x_min) / 5],  # tick every ~1/5th of the span
             y_range=[y_min, y_max, (y_max - y_min) / 5],  # likewise
             x_length=10,
             y_length=6,
-            axis_config={"include_ticks": True},
+            axis_config={
+                "color": BLACK,
+                "include_ticks": True,
+                "tick_size": 0.05,
+            },
+        ).to_edge(DOWN)
+
+        # Compute data-space mid-X and mid-Y for each band
+        x_mid = (x_min + x_max) / 2
+        y_mid_pos = (0 + y_max) / 2  # center of the red band
+        y_mid_neg = (0 + y_min) / 2  # center of the blue band
+
+        # Convert those to scene coordinates
+        center_pos = axes.coords_to_point(x_mid, y_mid_pos)
+        center_neg = axes.coords_to_point(x_mid, y_mid_neg)
+
+        # Band sizes in scene units:
+        band_width = axes.x_length
+        band_height_pos = axes.y_length * (y_max - 0) / (y_max - y_min)
+        band_height_neg = axes.y_length * (0 - y_min) / (y_max - y_min)
+
+        # Now build the rectangles at origin, then move them
+        red_band = Rectangle(
+            width=band_width,
+            height=band_height_pos,
+            fill_color=RED,
+            fill_opacity=0.2,
+            stroke_opacity=0,
+        )
+        red_band.move_to(center_pos)
+
+        blue_band = Rectangle(
+            width=band_width,
+            height=band_height_neg,
+            fill_color=BLUE,
+            fill_opacity=0.2,
+            stroke_opacity=0,
+        )
+        blue_band.move_to(center_neg)
+
+        self.play(
+            Create(red_band),
+            Create(blue_band),
+            Create(axes),
+            run_time=1
         )
 
-        self.play(Create(axes))
+        self.wait(3)
+
+        # 2) Build but hide x-axis labels
+        #    a) Get the tick values
+        x_start, x_end, x_delta = axes.x_range
+        tick_values = np.arange(x_start, x_end + 1e-8, x_delta)
+
+        #    b) Create a Text label for each
+        bottom_y = axes.get_bottom()[1]
+        x_labels = VGroup()
+        for val in tick_values:
+            lbl = Text(f"{val:.2f}", font_size=24, color=BLACK)
+            # Position at the same x, but below the axes box
+            screen_pt = axes.coords_to_point(val, y_min)
+            lbl.move_to([screen_pt[0], bottom_y - 0.3, 0])
+            x_labels.add(lbl)
+
+        x_labels.set_opacity(0)  # start invisible
+        self.add(x_labels)
 
         # 2) Initial point + its CI bar
         x0 = data_x[initial_index]
         y0 = data_y[initial_index]
         ci0_lo = data_ci_lower[initial_index]
         ci0_hi = data_ci_upper[initial_index]
+
+        # first point & bar in red:
         pt = Dot(axes.coords_to_point(x0, y0), color=RED)
         err = Line(
             axes.coords_to_point(x0, ci0_lo),
             axes.coords_to_point(x0, ci0_hi),
             color=RED
         )
-        self.play(FadeIn(err), FadeIn(pt))
-        self.wait(1)
+        self.add(pt, err)
+        self.wait(10)
 
-        # 3) Prepare all the final dots and their CI bars
+        # 3) Build all blue dots & bars at the red point’s location:
+        initial_pt = axes.coords_to_point(x0, y0)
+        initial_lo = axes.coords_to_point(x0, ci0_lo)
+        initial_hi = axes.coords_to_point(x0, ci0_hi)
+
         fan_dots = VGroup(*[
-            Dot(axes.coords_to_point(x, y), color=BLUE)
-            for x, y in zip(data_x, data_y)
+            Dot(initial_pt, color=BLACK)
+            for _ in data_x[initial_index+1:]
         ])
         fan_bars = VGroup(*[
-            Line(
-                axes.coords_to_point(x, lo),
-                axes.coords_to_point(x, hi),
-                color=BLUE
-            )
-            for x, lo, hi in zip(data_x, data_ci_lower, data_ci_upper)
+            Line(initial_lo, initial_hi, color=BLACK)
+            for _ in data_x[initial_index+1:]
         ])
 
-        # 4) Animate the fan-out: each dot + its error bar
-        #    transform from the initial pt and err
+        # Add them behind the red ones
+        self.add(fan_dots, fan_bars)
+
+        # 4) Animate: fade out the red, move all blue into place simultaneously
         animations = []
-        for d, b in zip(fan_dots, fan_bars):
-            animations.append(TransformFromCopy(pt, d))
-            animations.append(TransformFromCopy(err, b))
+        for dot, x, y in zip(fan_dots, rem_x, rem_y):
+            animations.append(
+                dot.animate.move_to(axes.coords_to_point(x, y))
+            )
+        for bar, x, lo, hi in zip(fan_bars, rem_x, rem_lo, rem_hi):
+            animations.append(
+                bar.animate.put_start_and_end_on(
+                    axes.coords_to_point(x, lo),
+                    axes.coords_to_point(x, hi),
+                )
+            )
+        # at the same time, fade out the original red dot & bar
+        animations.append(FadeOut(pt))
+        animations.append(FadeOut(err))
 
         self.play(
-            FadeOut(err),
-            LaggedStart(*animations, lag_ratio=0.05),
-            FadeOut(pt),
-            run_time=3
+            *animations,
+            x_labels.animate.set_opacity(1),
+            run_time=5
         )
-        self.wait(2)
+        self.wait(10)
