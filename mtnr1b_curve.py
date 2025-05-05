@@ -51,7 +51,7 @@ class ConfidenceFan(Scene):
         # ────────────────────────────────────────────────────────────────────
 
         # 1) Axes
-        x_min, x_max = float(data_x.min()) - 0.25, float(data_x.max() + 0.25)
+        x_min, x_max = float(data_x.min()), float(data_x.max())
         y_min = float(data_ci_lower.min()) - 0.001  # a little padding
         y_max = float(data_ci_upper.max()) + 0.001
 
@@ -182,4 +182,4 @@ class ConfidenceFan(Scene):
             x_labels.animate.set_opacity(1),
             run_time=5
         )
-        self.wait(10)
+        self.wait(50)
