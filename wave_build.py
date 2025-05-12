@@ -2,6 +2,7 @@ from manim import *
 import numpy as np
 
 # Run with command line: manim -pql wave_build.py SceneName
+# High quality: manim -pqh wave_build.py WaveBuildComposite
 
 
 class WaveDecomposition(Scene):

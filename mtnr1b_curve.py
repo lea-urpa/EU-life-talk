@@ -1,7 +1,7 @@
 from manim import *
 import numpy as np
 # Run with command line: manim -pql mtnr1b_curve.py SceneName
-
+# High quality: manim -pqh mtnr1b_curve.py SceneName
 
 from manim import *
 import numpy as np
